@@ -11,6 +11,22 @@ export class PredictedProcess {
     public readonly command: string,
   ) {}
 
+  // This function is responsible for returning a rejected promise in the case of a signal being aborted to improve the readability of the code.
+  private handleAbortedSignal(): Promise<void> {
+    return Promise.reject(
+      new DOMException('Signal already aborted!', 'AbortError'),
+    );
+  }
+
+  // This function is responsible for creating the event listener that will check for the signal being aborted.
+  private createHandlerToAbortSignal(
+    handler: (event: any) => void,
+    signal?: AbortSignal,
+  ): void {
+    // once: true -> Clears the event listener when triggered
+    signal?.addEventListener('abort', handler, { once: true });
+  }
+
   // This function generates the cache key for a process.
   private generateCacheKey(signal?: AbortSignal): string {
     return `${this.id}_${signal?.aborted}`;
@@ -22,15 +38,18 @@ export class PredictedProcess {
    * WRITE UP:
    * (Please provide a detailed explanation of your approach, specifically the reasoning behind your design decisions. This can be done _after_ the 1h30m time limit.)
    *
-   * ...
+   * 1. Using the Fail First approach, we avoid executing too much code when we know the promise will reject.
    *
+   * 2. If the process is already memoized, we return the memoized process instead of recreating the promise.
+   *
+   * 3. We declare the 'error' event before the 'close' event since doing otherwise would lead to invalid commands resolving instead of rejecting.
+   *
+   * 4. We create a event listener to make sure we reject the promise as soon as the AbortSignal is triggered, providing proper feedback.
    */
   public async run(signal?: AbortSignal): Promise<void> {
     // Rejects immediately if its aborted
     if (signal?.aborted) {
-      return Promise.reject(
-        new DOMException('Signal already aborted!', 'AbortError'),
-      );
+      return this.handleAbortedSignal();
     }
 
     const cacheKey = this.generateCacheKey(signal);
@@ -62,7 +81,7 @@ export class PredictedProcess {
         return reject(new DOMException('Signal already aborted', 'AbortError'));
       };
 
-      signal?.addEventListener('abort', abortSignalHandler, { once: true });
+      this.createHandlerToAbortSignal(abortSignalHandler, signal);
     }) as Promise<void>;
 
     // Memoizing child process
