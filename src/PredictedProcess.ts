@@ -26,7 +26,17 @@ export class PredictedProcess {
    *
    */
   public async run(signal?: AbortSignal): Promise<void> {
-    // TODO: Implement this.
+    // Rejects immediately if its aborted
+    if (signal?.aborted) {
+      return Promise.reject(
+        new DOMException('Signal already aborted!', 'AbortError'),
+      );
+    }
+
+    const cacheKey = this.generateCacheKey(signal);
+    if (cacheKey in this._memoizedCache) {
+      return;
+    }
   }
 
   /**
