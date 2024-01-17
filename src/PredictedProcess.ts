@@ -37,6 +37,32 @@ export class PredictedProcess {
     if (cacheKey in this._memoizedCache) {
       return;
     }
+
+    const promiseToSend = new Promise<void>((resolve, reject) => {
+      const child = spawn(this.command);
+      child.on('error', (error: any) => {
+        // Rejects if encounters an error
+        return reject(error);
+      });
+
+      // Create handler function to reject the promise in case the signal is aborted during execution
+      const abortSignalHandler = (event: any) => {
+        return reject(new DOMException('Signal already aborted', 'AbortError'));
+      };
+
+      signal?.addEventListener('abort', abortSignalHandler, { once: true });
+    }) as Promise<void>;
+
+    // Memoizing child process
+    this._memoizedCache[cacheKey] = this;
+
+    try {
+      await promiseToSend;
+    } catch (error) {
+      // Deleting from cache when facing an error
+      delete this._memoizedCache[cacheKey];
+      throw error;
+    }
   }
 
   /**
