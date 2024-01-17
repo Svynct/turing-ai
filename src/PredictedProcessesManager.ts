@@ -35,6 +35,9 @@ export class PredictedProcessesManager {
    *
    */
   public async runAll(signal?: AbortSignal): Promise<void> {
-    // TODO: Implement this.
+    // Rejects immediately if its aborted
+    if (signal?.aborted) {
+      throw new DOMException('Signal already aborted', 'AbortError');
+    }
   }
 }
