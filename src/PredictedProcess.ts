@@ -45,6 +45,18 @@ export class PredictedProcess {
         return reject(error);
       });
 
+      child.on('close', (event: any) => {
+        if (event !== EXIT_CODE || !child) {
+          return;
+        }
+
+        child.kill();
+        child.removeAllListeners();
+
+        // Resolving promise when process is executed
+        return resolve();
+      });
+
       // Create handler function to reject the promise in case the signal is aborted during execution
       const abortSignalHandler = (event: any) => {
         return reject(new DOMException('Signal already aborted', 'AbortError'));
