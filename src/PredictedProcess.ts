@@ -1,7 +1,10 @@
-import type { ChildProcess } from 'child_process';
+import { spawn } from 'child_process';
+
+const EXIT_CODE = 0;
 
 export class PredictedProcess {
-  private _childProcess: ChildProcess | null = null;
+  // Our cache with the memoized prcesses.
+  private _memoizedCache: { [key: string]: PredictedProcess } = {};
 
   public constructor(
     public readonly id: number,
@@ -31,7 +34,13 @@ export class PredictedProcess {
    *
    */
   public memoize(): PredictedProcess {
-    // TODO: Implement this.
-    return this;
+    const cacheKey = `${this.id}_undefined`;
+
+    if (cacheKey in this._memoizedCache) {
+      return this._memoizedCache[cacheKey];
+    }
+
+    this._memoizedCache[cacheKey] = this;
+    return this._memoizedCache[cacheKey];
   }
 }
